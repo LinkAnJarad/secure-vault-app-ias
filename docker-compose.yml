@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: secure_vault_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: secure_vault
+      MYSQL_USER: vault_user
+      MYSQL_PASSWORD: vault_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backups:/backups
+    networks:
+      - vault_network
+
+  laravel:
+    build:
+      context: .
+      dockerfile: Dockerfile.laravel-dev
+    container_name: secure_vault_api
+    volumes:
+      # Mount entire Laravel app for development
+      - ./backend:/var/www/html
+      - ./ssl:/etc/ssl/certs
+      # Persistent storage for uploaded files
+      - vault_storage:/var/www/html/storage/app/files
+    environment:
+      DB_HOST: mysql
+      DB_DATABASE: secure_vault
+      DB_USERNAME: vault_user
+      DB_PASSWORD: vault_password
+      APP_URL: https://localhost
+      APP_ENV: local
+      APP_DEBUG: true
+    depends_on:
+      - mysql
+    networks:
+      - vault_network
+
+  react:
+    build:
+      context: .
+      dockerfile: Dockerfile.react-dev
+    container_name: secure_vault_frontend
+    volumes:
+      # Mount React app for hot reloading
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    ports:
+      - "3000:3000"
+    networks:
+      - vault_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: secure_vault_nginx
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/ssl/certs
+    depends_on:
+      - laravel
+      - react
+    networks:
+      - vault_network
+
+volumes:
+  mysql_data:
+  vault_storage:
+
+networks:
+  vault_network:
+    driver: bridge

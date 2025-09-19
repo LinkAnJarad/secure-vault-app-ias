@@ -1,0 +1,40 @@
+[90m= [39m[34;4mIlluminate\Support\Collection[39;24m {#5352
+    [34mall[39m: [
+      {#5357
+        +"[1mid[22m": [35m1[39m,
+        +"[1mmigration[22m": "[32m0001_01_01_000000_create_users_table[39m",
+        +"[1mbatch[22m": [35m1[39m,
+      },
+      {#5356
+        +"[1mid[22m": [35m2[39m,
+        +"[1mmigration[22m": "[32m0001_01_01_000001_create_cache_table[39m",
+        +"[1mbatch[22m": [35m1[39m,
+      },
+      {#5358
+        +"[1mid[22m": [35m3[39m,
+        +"[1mmigration[22m": "[32m0001_01_01_000002_create_jobs_table[39m",
+        +"[1mbatch[22m": [35m1[39m,
+      },
+      {#5351
+        +"[1mid[22m": [35m4[39m,
+        +"[1mmigration[22m": "[32m2024_01_01_000002_create_files_table[39m",
+        +"[1mbatch[22m": [35m1[39m,
+      },
+      {#5350
+        +"[1mid[22m": [35m5[39m,
+        +"[1mmigration[22m": "[32m2024_01_01_000003_create_audit_logs_table[39m",
+        +"[1mbatch[22m": [35m1[39m,
+      },
+      {#5349
+        +"[1mid[22m": [35m6[39m,
+        +"[1mmigration[22m": "[32m2024_01_01_000004_create_file_shares_table[39m",
+        +"[1mbatch[22m": [35m1[39m,
+      },
+      {#5348
+        +"[1mid[22m": [35m7[39m,
+        +"[1mmigration[22m": "[32m2025_09_16_124619_create_personal_access_tokens_table[39m",
+        +"[1mbatch[22m": [35m2[39m,
+      },
+    ],
+  }
+

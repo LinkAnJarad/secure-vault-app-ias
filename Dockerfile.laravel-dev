@@ -1,0 +1,49 @@
+FROM php:8.2-fpm
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    cron \
+    default-mysql-client \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# After installing packages, add:
+RUN mkdir -p /backups \
+    && chown -R www-data:www-data /backups \
+    && chmod -R 775 /backups
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy Docker configuration files
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
+COPY docker/backup-script.sh /usr/local/bin/backup-script.sh
+
+# Make backup script executable
+RUN chmod +x /usr/local/bin/backup-script.sh
+
+# Create log directory for supervisor
+RUN mkdir -p /var/log/supervisor
+
+# Create a script that runs on container start
+COPY docker/laravel-start.sh /usr/local/bin/laravel-start.sh
+RUN chmod +x /usr/local/bin/laravel-start.sh
+
+# Expose port 9000 for PHP-FPM
+EXPOSE 9000
+
+CMD ["/usr/local/bin/laravel-start.sh"]

@@ -1,0 +1,74 @@
+FROM php:8.2-fpm
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    default-mysql-client \
+    cron \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# After installing packages, add:
+RUN mkdir -p /backups \
+    && chown -R www-data:www-data /backups \
+    && chmod -R 775 /backups
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy existing application directory contents
+COPY backend /var/www/html
+
+# Create Services directory if it doesn't exist
+RUN mkdir -p /var/www/html/app/Services
+
+# Copy Docker configuration files
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
+COPY docker/backup-script.sh /usr/local/bin/backup-script.sh
+
+# Make backup script executable
+RUN chmod +x /usr/local/bin/backup-script.sh
+
+# Install Laravel dependencies
+RUN composer install --no-dev --optimize-autoloader --no-scripts
+
+# Create all necessary storage directories
+RUN mkdir -p /var/www/html/storage/framework/sessions \
+    && mkdir -p /var/www/html/storage/framework/views \
+    && mkdir -p /var/www/html/storage/framework/cache \
+    && mkdir -p /var/www/html/storage/app/files \
+    && mkdir -p /var/www/html/storage/logs \
+    && mkdir -p /var/www/html/bootstrap/cache
+
+# Set proper ownership and permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/bootstrap/cache
+
+# Create log directory for supervisor
+RUN mkdir -p /var/log/supervisor
+
+# Setup cron for backups (only if we have crontab)
+RUN which crontab > /dev/null 2>&1 && echo "0 2 * * * /usr/local/bin/backup-script.sh" | crontab - || true
+
+# Generate Laravel app key and cache config (run as www-data)
+RUN su www-data -s /bin/bash -c "php artisan key:generate --force || true"
+RUN su www-data -s /bin/bash -c "php artisan config:cache || true"
+
+# Expose port 9000 for PHP-FPM
+EXPOSE 9000
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
