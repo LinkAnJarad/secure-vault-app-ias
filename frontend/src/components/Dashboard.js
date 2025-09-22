@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import './Dashboard.css';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -46,66 +47,96 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading dashboard...</div>;
+    return (
+      <div className="dashboard">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="dashboard">
       {/* Header */}
       <header className="dashboard-header">
-        <h1>Welcome back, {user?.name} 👋</h1>
-        <p className="subtitle">
-          You are logged in as <strong>{user?.role}</strong>
-          {user?.department && ` — ${user.department}`}
-        </p>
+        <div className="welcome-section">
+          <h1 className="welcome-title">Welcome back, {user?.name}</h1>
+          <p className="welcome-subtitle">
+            {user?.role} {user?.department && `• ${user.department}`}
+          </p>
+        </div>
       </header>
 
       {/* Key Stats */}
-      <section className="dashboard-stats">
-        <div className="dashboard-card">
-          <h3>📁 Total Files</h3>
-          <div className="stat-number">{stats.totalFiles}</div>
-        </div>
+      <section className="stats-section">
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon">📁</div>
+            <div className="stat-content">
+              <h3 className="stat-label">Total Files</h3>
+              <div className="stat-value">{stats.totalFiles}</div>
+            </div>
+          </div>
 
-        <div className="dashboard-card">
-          <h3>💾 Storage Used</h3>
-          <div className="stat-number">{formatFileSize(stats.storageUsed)}</div>
-        </div>
+          <div className="stat-card">
+            <div className="stat-icon">💾</div>
+            <div className="stat-content">
+              <h3 className="stat-label">Storage Used</h3>
+              <div className="stat-value">{formatFileSize(stats.storageUsed)}</div>
+            </div>
+          </div>
 
-        <div className="dashboard-card">
-          <h3>👤 Account</h3>
-          <div className="stat-number">{user?.role}</div>
+          <div className="stat-card">
+            <div className="stat-icon">👤</div>
+            <div className="stat-content">
+              <h3 className="stat-label">Account Type</h3>
+              <div className="stat-value">{user?.role}</div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Quick Actions */}
-      <section className="dashboard-actions">
-        <h2>Quick Actions</h2>
+      <section className="actions-section">
+        <h2 className="section-title">Quick Actions</h2>
         <div className="actions-grid">
-          <Link to="/upload" className="btn btn-primary">📤 Upload File</Link>
-          <Link to="/files" className="btn btn-secondary">📋 View Files</Link>
+          <Link to="/upload" className="action-btn primary">
+            <span className="action-icon">📤</span>
+            Upload File
+          </Link>
+          <Link to="/files" className="action-btn secondary">
+            <span className="action-icon">📋</span>
+            View Files
+          </Link>
           {user?.role === 'admin' && (
-            <Link to="/admin" className="btn btn-admin">⚙️ Admin Panel</Link>
+            <Link to="/admin" className="action-btn admin">
+              <span className="action-icon">⚙️</span>
+              Admin Panel
+            </Link>
           )}
         </div>
       </section>
 
       {/* Recent Files */}
-      <section className="recent-files">
-        <h2>🕑 Recent Files</h2>
+      <section className="files-section">
+        <h2 className="section-title">Recent Files</h2>
         {stats.recentFiles.length > 0 ? (
-          <div className="file-list">
+          <div className="files-list">
             {stats.recentFiles.map((file) => (
-              <div key={file.id} className="file-item">
-                <div className="file-info">
-                  <h4>{file.original_name}</h4>
-                  <p className="file-meta">
-                    {formatDate(file.created_at)} • {formatFileSize(file.size)} • {file.mime_type}
-                  </p>
+              <div key={file.id} className="file-card">
+                <div className="file-content">
+                  <h4 className="file-name">{file.original_name}</h4>
+                  <div className="file-meta">
+                    <span className="file-date">{formatDate(file.created_at)}</span>
+                    <span className="file-size">{formatFileSize(file.size)}</span>
+                    <span className="file-type">{file.mime_type}</span>
+                  </div>
                   {file.labels?.length > 0 && (
                     <div className="file-labels">
                       {file.labels.map((label) => (
-                        <span key={label} className="label">{label}</span>
+                        <span key={label} className="file-label">{label}</span>
                       ))}
                     </div>
                   )}
@@ -114,7 +145,10 @@ const Dashboard = () => {
             ))}
           </div>
         ) : (
-          <p>No files uploaded yet. <Link to="/upload">Upload your first file!</Link></p>
+          <div className="empty-state">
+            <p className="empty-message">No files uploaded yet.</p>
+            <Link to="/upload" className="empty-action">Upload your first file</Link>
+          </div>
         )}
       </section>
     </div>

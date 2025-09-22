@@ -30,10 +30,89 @@ class FileController extends Controller
         $this->encryptionService = $encryptionService;
     }
 
+    // public function upload(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'file' => 'required|file|max:10240', // 10MB max
+    //         'labels' => 'array',
+    //         'labels.*' => 'string|max:255'
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json(['errors' => $validator->errors()], 422);
+    //     }
+
+    //     $uploadedFile = $request->file('file');
+    //     $mimeType = $uploadedFile->getMimeType();
+
+    //     if (!in_array($mimeType, $this->allowedMimes)) {
+    //         return response()->json(['error' => 'File type not allowed'], 422);
+    //     }
+
+    //     $user = $request->user();
+    //     $originalName = $uploadedFile->getClientOriginalName();
+    //     $fileName = Str::uuid() . '.' . $uploadedFile->getClientOriginalExtension();
+    //     $tempPath = $uploadedFile->storeAs('temp', $fileName);
+
+    //     // Generate AES key and encrypt file
+    //     $aesKey = $this->encryptionService->generateAESKey();
+    //     $encryptedContent = $this->encryptionService->encryptFile(
+    //         Storage::path($tempPath),
+    //         $aesKey
+    //     );
+
+    //     // Encrypt AES key with user's RSA public key
+    //     $encryptedKey = $this->encryptionService->encryptWithRSA(
+    //         $aesKey,
+    //         $user->rsa_public_key
+    //     );
+
+    //     // Calculate hash before encryption for integrity
+    //     $fileHash = $this->encryptionService->calculateFileHash(Storage::path($tempPath));
+
+    //     // Store encrypted file
+    //     $finalPath = 'files/' . $fileName;
+    //     Storage::put($finalPath, base64_decode($encryptedContent));
+
+    //     // Clean up temp file
+    //     Storage::delete($tempPath);
+
+    //     // Extract text for search (if text file)
+    //     $extractedText = '';
+    //     if ($mimeType === 'text/plain') {
+    //         $extractedText = substr(file_get_contents($uploadedFile->getRealPath()), 0, 1000);
+    //     }
+
+    //     $file = File::create([
+    //         'name' => $fileName,
+    //         'original_name' => $originalName,
+    //         'path' => $finalPath,
+    //         'size' => $uploadedFile->getSize(),
+    //         'mime_type' => $mimeType,
+    //         'hash' => $fileHash,
+    //         'encrypted_key' => $encryptedKey,
+    //         'owner_id' => $user->id,
+    //         'department' => $user->department,
+    //         'labels' => $request->labels ?? [],
+    //         'extracted_text' => $extractedText
+    //     ]);
+
+    //     AuditLog::create([
+    //         'user_id' => $user->id,
+    //         'action' => 'upload',
+    //         'file_id' => $file->id,
+    //         'ip_address' => $request->ip(),
+    //         'details' => ['filename' => $originalName, 'size' => $uploadedFile->getSize()]
+    //     ]);
+
+    //     return response()->json($file->load('owner'), 201);
+    // }
+
+
     public function upload(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'file' => 'required|file|max:10240', // 10MB max
+            'file' => 'required|file|max:1000', // 10MB max
             'labels' => 'array',
             'labels.*' => 'string|max:255'
         ]);
@@ -49,63 +128,132 @@ class FileController extends Controller
             return response()->json(['error' => 'File type not allowed'], 422);
         }
 
-        $user = $request->user();
-        $originalName = $uploadedFile->getClientOriginalName();
-        $fileName = Str::uuid() . '.' . $uploadedFile->getClientOriginalExtension();
-        $tempPath = $uploadedFile->storeAs('temp', $fileName);
+        try {
+            $user = $request->user();
+            $originalName = $uploadedFile->getClientOriginalName();
+            $fileName = Str::uuid() . '.' . $uploadedFile->getClientOriginalExtension();
+            $tempPath = $uploadedFile->storeAs('temp', $fileName);
 
-        // Generate AES key and encrypt file
-        $aesKey = $this->encryptionService->generateAESKey();
-        $encryptedContent = $this->encryptionService->encryptFile(
-            Storage::path($tempPath),
-            $aesKey
-        );
+            // Generate AES key and encrypt file
+            $aesKey = $this->encryptionService->generateAESKey();
+            $encryptedContent = $this->encryptionService->encryptFile(
+                Storage::path($tempPath),
+                $aesKey
+            );
 
-        // Encrypt AES key with user's RSA public key
-        $encryptedKey = $this->encryptionService->encryptWithRSA(
-            $aesKey,
-            $user->rsa_public_key
-        );
+            // Encrypt AES key with user's RSA public key
+            $encryptedKey = $this->encryptionService->encryptWithRSA(
+                $aesKey,
+                $user->rsa_public_key
+            );
 
-        // Calculate hash before encryption for integrity
-        $fileHash = $this->encryptionService->calculateFileHash(Storage::path($tempPath));
+            // Calculate hash before encryption for integrity
+            $fileHash = $this->encryptionService->calculateFileHash(Storage::path($tempPath));
 
-        // Store encrypted file
-        $finalPath = 'files/' . $fileName;
-        Storage::put($finalPath, base64_decode($encryptedContent));
+            // Store encrypted file
+            $finalPath = 'files/' . $fileName;
+            Storage::put($finalPath, base64_decode($encryptedContent));
 
-        // Clean up temp file
-        Storage::delete($tempPath);
+            // Clean up temp file
+            Storage::delete($tempPath);
 
-        // Extract text for search (if text file)
-        $extractedText = '';
-        if ($mimeType === 'text/plain') {
-            $extractedText = substr(file_get_contents($uploadedFile->getRealPath()), 0, 1000);
+            // Extract text for search (if text file)
+            $extractedText = '';
+            if ($mimeType === 'text/plain') {
+                $extractedText = substr(file_get_contents($uploadedFile->getRealPath()), 0, 1000);
+            }
+
+            $file = File::create([
+                'name' => $fileName,
+                'original_name' => $originalName,
+                'path' => $finalPath,
+                'size' => $uploadedFile->getSize(),
+                'mime_type' => $mimeType,
+                'hash' => $fileHash,
+                'encrypted_key' => $encryptedKey,
+                'owner_id' => $user->id,
+                'department' => $user->department,
+                'labels' => $request->labels ?? [],
+                'extracted_text' => $extractedText
+            ]);
+
+            // Auto-share with all admins (with error handling)
+            $this->shareFileWithAdmins($file, $aesKey);
+
+            AuditLog::create([
+                'user_id' => $user->id,
+                'action' => 'upload',
+                'file_id' => $file->id,
+                'ip_address' => $request->ip(),
+                'details' => ['filename' => $originalName, 'size' => $uploadedFile->getSize()]
+            ]);
+
+            return response()->json($file->load('owner'), 201);
+            
+        } catch (\Exception $e) {
+            // Clean up any created files if upload fails
+            if (isset($finalPath)) {
+                Storage::delete($finalPath);
+            }
+            if (isset($tempPath)) {
+                Storage::delete($tempPath);
+            }
+            if (isset($file)) {
+                $file->delete();
+            }
+            
+            AuditLog::create([
+                'user_id' => $user->id ?? null,
+                'action' => 'upload_failed',
+                'file_id' => $file->id ?? null,
+                'ip_address' => $request->ip(),
+                'details' => ['error' => $e->getMessage()]
+            ]);
+
+            return response()->json(['error' => 'Upload failed: ' . $e->getMessage()], 500);
         }
+    }
 
-        $file = File::create([
-            'name' => $fileName,
-            'original_name' => $originalName,
-            'path' => $finalPath,
-            'size' => $uploadedFile->getSize(),
-            'mime_type' => $mimeType,
-            'hash' => $fileHash,
-            'encrypted_key' => $encryptedKey,
-            'owner_id' => $user->id,
-            'department' => $user->department,
-            'labels' => $request->labels ?? [],
-            'extracted_text' => $extractedText
-        ]);
+    private function shareFileWithAdmins(File $file, string $aesKey)
+    {
+        try {
+            // Get all admins
+            $admins = User::where('role', 'admin')->get();
+            
+            foreach ($admins as $admin) {
+                // Skip admins without RSA keys
+                if (empty($admin->rsa_public_key)) {
+                    continue;
+                }
+                
+                try {
+                    // Encrypt AES key with admin's RSA public key
+                    $encryptedKeyForAdmin = $this->encryptionService->encryptWithRSA(
+                        $aesKey,
+                        $admin->rsa_public_key
+                    );
 
-        AuditLog::create([
-            'user_id' => $user->id,
-            'action' => 'upload',
-            'file_id' => $file->id,
-            'ip_address' => $request->ip(),
-            'details' => ['filename' => $originalName, 'size' => $uploadedFile->getSize()]
-        ]);
-
-        return response()->json($file->load('owner'), 201);
+                    // Share the file with the admin
+                    $file->sharedUsers()->syncWithoutDetaching([
+                        $admin->id => ['encrypted_key' => $encryptedKeyForAdmin]
+                    ]);
+                } catch (\Exception $e) {
+                    // Log the error but don't stop the upload process
+                    \Log::warning('Failed to share file with admin', [
+                        'file_id' => $file->id,
+                        'admin_id' => $admin->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    continue;
+                }
+            }
+        } catch (\Exception $e) {
+            // Log the error but don't stop the upload process
+            \Log::warning('Failed to share file with admins', [
+                'file_id' => $file->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     public function index(Request $request)

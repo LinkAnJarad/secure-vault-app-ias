@@ -57,7 +57,7 @@ const Register = () => {
   return (
     <div className="auth-container">
       <div className="auth-form">
-        <h2>Secure File Vault - Register</h2>
+        <h2>Secure File Sharing - Register</h2>
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">

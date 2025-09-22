@@ -14,7 +14,7 @@ const Navigation = () => {
   return (
     <nav className="navigation">
       <div className="nav-brand">
-        <h3>🔒 Secure File Vault</h3>
+        <h3>Secure File Sharing</h3>
       </div>
       
       <ul className="nav-links">

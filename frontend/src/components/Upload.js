@@ -35,7 +35,11 @@ const Upload = () => {
       setLabels('');
       setTimeout(() => navigate('/files'), 2000);
     } catch (error) {
-      setMessage(error.response?.data?.error || 'Upload failed');
+      if (error.response?.status === 413) {
+        setMessage('File is too large.');
+      } else {
+        setMessage(error.response?.data?.error || 'Upload failed');
+      }
     } finally {
       setUploading(false);
     }
@@ -53,7 +57,7 @@ const Upload = () => {
       'application/vnd.ms-excel': ['.xls'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
     },
-    maxSize: 10485760, // 10MB
+    maxSize: 1048576, // 1MB
     multiple: false
   });
 
@@ -83,7 +87,7 @@ const Upload = () => {
         ) : (
           <div>
             <p>Drag & drop a file here, or click to select</p>
-            <small>Supported: PDF, DOCX, DOC, TXT, JPG, PNG, XLS, XLSX (max 10MB)</small>
+            <small>Supported: PDF, DOCX, DOC, TXT, JPG, PNG, XLS, XLSX (max 1MB)</small>
           </div>
         )}
       </div>
